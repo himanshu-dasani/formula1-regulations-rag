@@ -41,7 +41,7 @@ Start Jupyter through uv:
 uv run jupyter notebook
 ```
 
-Open `document_similarity_app.ipynb` and run the cells from top to bottom. The embedding cell sends document text to the OpenAI embeddings API and may take a little while for these regulations. Change the `query` cell to ask a different question. The final cell prints an answer with citations and the retrieved passages with similarity scores.
+Open `app.ipynb` and run the cells from top to bottom. The embedding cell sends document text to the OpenAI embeddings API and may take a little while for these regulations. Change the `query` cell to ask a different question. The final cell prints an answer with citations and the retrieved passages with similarity scores.
 
 In VS Code, select the project's `.venv` Python interpreter as the notebook kernel. If it is not listed, run `uv sync` first, then select `.venv/bin/python` (macOS/Linux) or `.venv\\Scripts\\python.exe` (Windows).
 
