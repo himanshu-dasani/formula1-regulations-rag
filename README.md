@@ -1,13 +1,13 @@
-# Document Similarity Search Demo
+# Formula 1 Regulations RAG Prototype
 
-A small Jupyter notebook demonstrating semantic search with text embeddings. It embeds a collection of Formula 1 sentences and a user query with OpenAI's `text-embedding-3-large` model, compares them using cosine similarity, and returns the sentence with the highest score.
+A step-by-step Jupyter notebook demonstrating retrieval-augmented generation (RAG) over Formula 1 regulation PDFs. It loads the PDFs, splits their text into chunks, retrieves passages related to a question, and asks a language model to answer from those passages with source PDF and page citations.
 
-This is a learning demo: the highest similarity is the closest match by meaning, and is not guaranteed to be a factually correct answer.
+This is a working RAG prototype for learning and experimentation, rather than a deployed application. It uses an in-memory index and rebuilds the document embeddings when the embedding cell is run.
 
 ## Requirements
 
 - Python 3.13 or newer
-- An OpenAI API key with access to the embeddings API
+- An OpenAI API key with access to the embeddings and chat completion models used by the notebook
 
 ## Setup
 
@@ -21,13 +21,17 @@ uv sync
 
 ## Configure the API key
 
-Create a `.env` file next to the notebook with your key:
+Create a `.env` file in the project directory, next to the notebook, with your key:
 
 ```text
 OPENAI_API_KEY=your_api_key_here
 ```
 
 Keep `.env` private. It is ignored by Git; do not commit your API key.
+
+## Add PDFs
+
+Place PDF files in the `documents/` folder. The repository includes six FIA 2026 Formula 1 regulation sections (A–F). LangChain's `PyMuPDFLoader` extracts text page by page; scanned PDFs without a text layer need OCR before they can be searched.
 
 ## Run the notebook
 
@@ -37,12 +41,22 @@ Start Jupyter through uv:
 uv run jupyter notebook
 ```
 
-Open `document_similarity_app.ipynb` and run the cells from top to bottom. Edit the `query` cell or the `documents` list to try other searches. The final cell prints the closest matching sentence and its cosine similarity score.
+Open `document_similarity_app.ipynb` and run the cells from top to bottom. The embedding cell sends document text to the OpenAI embeddings API and may take a little while for these regulations. Change the `query` cell to ask a different question. The final cell prints an answer with citations and the retrieved passages with similarity scores.
+
+In VS Code, select the project's `.venv` Python interpreter as the notebook kernel. If it is not listed, run `uv sync` first, then select `.venv/bin/python` (macOS/Linux) or `.venv\\Scripts\\python.exe` (Windows).
 
 ## How it works
 
-1. The notebook creates an embedding for each document sentence and for the query.
-2. It calculates cosine similarity between the query vector and each document vector.
-3. It selects the index of the largest score and returns the sentence at that index.
+1. LangChain's `DirectoryLoader` and `PyMuPDFLoader` load each PDF page with its filename and page number as metadata.
+2. LangChain's `RecursiveCharacterTextSplitter` creates overlapping chunks while preserving that metadata.
+3. The notebook embeds each chunk using OpenAI's `text-embedding-3-small` model.
+4. It embeds a question and retrieves the five most similar chunks by cosine similarity.
+5. OpenAI's `gpt-4o-mini` model receives those passages and generates an answer with citations to their PDF filenames and pages.
 
-The example uses a short in-memory list of Formula 1 sentences; it does not read documents from files or use a vector database.
+## Scope and limitations
+
+- Extracted documents, chunks, and embeddings live only in notebook memory. Restarting the kernel clears them.
+- The notebook creates embeddings again whenever the embedding cell is rerun. This uses the embeddings API and may incur charges.
+- Retrieval compares the question against every chunk in memory. There is no persistent vector database or index.
+- Answers are grounded in the retrieved passages, but retrieval can miss relevant text and model-generated answers or citations can be inaccurate. Verify important details against the cited PDF pages.
+- The notebook is a local learning demo; it does not provide a web interface, user management, or a deployed service.
