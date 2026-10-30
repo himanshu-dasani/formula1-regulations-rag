@@ -1,62 +1,60 @@
-# Formula 1 Regulations RAG Prototype
+# Formula 1 Regulations RAG
 
-A step-by-step Jupyter notebook demonstrating retrieval-augmented generation (RAG) over Formula 1 regulation PDFs. It loads the PDFs, splits their text into chunks, retrieves passages related to a question, and asks a language model to answer from those passages with source PDF and page citations.
+An end-to-end retrieval-augmented generation (RAG) prototype in a Jupyter notebook. It answers questions about Formula 1 regulations by retrieving relevant passages from the supplied PDFs and asking an LLM to respond using those passages, with PDF and page citations.
 
-This is a working RAG prototype for learning and experimentation, rather than a deployed application. It uses an in-memory index and rebuilds the document embeddings when the embedding cell is run.
+The app uses a persistent local Chroma vector database for document chunks and embeddings. It is intended for learning and experimentation, not as a deployed service.
 
 ## Requirements
 
 - Python 3.13 or newer
-- An OpenAI API key with access to the embeddings and chat completion models used by the notebook
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- An OpenAI API key with access to `text-embedding-3-small` and `gpt-4o-mini`
 
 ## Setup
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if it is not already installed. Open a terminal in this project directory (the directory containing this README) and sync the project dependencies:
+From this directory, install the project dependencies:
 
 ```bash
 uv sync
 ```
 
-`uv sync` creates the project virtual environment and installs the dependencies declared in `pyproject.toml` (using `uv.lock` for reproducible versions).
-
-## Configure the API key
-
-Create a `.env` file in the project directory, next to the notebook, with your key:
+Create a `.env` file next to the notebook:
 
 ```text
 OPENAI_API_KEY=your_api_key_here
 ```
 
-Keep `.env` private. It is ignored by Git; do not commit your API key.
+Keep the key private. `.env` is ignored by Git.
 
-## Add PDFs
+## Source documents
 
-Place PDF files in the `documents/` folder. The repository includes six FIA 2026 Formula 1 regulation sections (A–F). LangChain's `PyMuPDFLoader` extracts text page by page; scanned PDFs without a text layer need OCR before they can be searched.
+The `documents/` folder contains the six FIA 2026 Formula 1 regulation sections (A–F). To add more regulations, place their PDFs in that folder. The notebook uses LangChain's `PyMuPDFLoader` to extract page text; scanned PDFs without a text layer need OCR before they can be searched.
 
-## Run the notebook
+## Run
 
-Start Jupyter through uv:
+Start Jupyter:
 
 ```bash
 uv run jupyter notebook
 ```
 
-Open `app.ipynb` and run the cells from top to bottom. The embedding cell sends document text to the OpenAI embeddings API and may take a little while for these regulations. Change the `query` cell to ask a different question. The final cell prints an answer with citations and the retrieved passages with similarity scores.
+Open `app.ipynb` and run its cells from top to bottom. The notebook loads and splits the PDFs, embeds the chunks, stores them in Chroma, retrieves the five most relevant chunks for the query, and generates a cited answer. Edit the `query` cell to ask a different question.
 
-In VS Code, select the project's `.venv` Python interpreter as the notebook kernel. If it is not listed, run `uv sync` first, then select `.venv/bin/python` (macOS/Linux) or `.venv\\Scripts\\python.exe` (Windows).
+In VS Code, use this project's `.venv` as the notebook kernel. If needed, run `uv sync` and select `.venv/bin/python` (macOS/Linux) or `.venv\\Scripts\\python.exe` (Windows), then restart the kernel.
 
 ## How it works
 
 1. LangChain's `DirectoryLoader` and `PyMuPDFLoader` load each PDF page with its filename and page number as metadata.
-2. LangChain's `RecursiveCharacterTextSplitter` creates overlapping chunks while preserving that metadata.
-3. The notebook embeds each chunk using OpenAI's `text-embedding-3-small` model.
-4. It embeds a question and retrieves the five most similar chunks by cosine similarity.
-5. OpenAI's `gpt-4o-mini` model receives those passages and generates an answer with citations to their PDF filenames and pages.
+2. `RecursiveCharacterTextSplitter` creates overlapping text chunks and preserves the source metadata.
+3. OpenAI's `text-embedding-3-small` converts each chunk into a vector. LangChain's Chroma integration stores vectors, text, and metadata in `chroma_db/`.
+4. Chroma embeds the question and retrieves the five most relevant chunks from the collection.
+5. OpenAI's `gpt-4o-mini` answers from the retrieved passages and cites their source PDF and page.
 
-## Scope and limitations
+## Chroma database and costs
 
-- Extracted documents, chunks, and embeddings live only in notebook memory. Restarting the kernel clears them.
-- The notebook creates embeddings again whenever the embedding cell is rerun. This uses the embeddings API and may incur charges.
-- Retrieval compares the question against every chunk in memory. There is no persistent vector database or index.
-- Answers are grounded in the retrieved passages, but retrieval can miss relevant text and model-generated answers or citations can be inaccurate. Verify important details against the cited PDF pages.
-- The notebook is a local learning demo; it does not provide a web interface, user management, or a deployed service.
+The notebook rebuilds the `formula1_regulations` Chroma collection from the PDFs when the indexing cell runs. This keeps the collection aligned with the current files, including removed or changed PDFs, but re-embedding uses the OpenAI embeddings API and may incur charges. The local `chroma_db/` folder is ignored by Git and can be regenerated by running the notebook.
+
+## Limitations
+
+- This is a local notebook prototype; it has no web interface, user accounts, or hosted database.
+- Retrieval can miss relevant passages, and generated answers or citations can be inaccurate. Check important details against the cited regulation pages.

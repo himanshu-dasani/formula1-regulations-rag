@@ -16,3 +16,6 @@ wheels/
 
 # Local document embedding cache
 .cache/
+
+# Local Chroma vector database
+chroma_db/
