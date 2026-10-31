@@ -13,3 +13,15 @@ dependencies = [
     "pymupdf",
     "python-dotenv",
 ]
+
+[project.optional-dependencies]
+faiss = [
+    "faiss-cpu>=1.11.0",
+]
+huggingface = [
+    "langchain-huggingface>=1.2.2",
+    "sentence-transformers",
+]
+ollama = [
+    "langchain-ollama>=1.1.0",
+]

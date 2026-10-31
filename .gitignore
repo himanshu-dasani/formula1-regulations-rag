@@ -19,3 +19,6 @@ wheels/
 
 # Local Chroma vector database
 chroma_db/
+
+# Local FAISS vector index
+faiss_index/
